@@ -9,14 +9,19 @@ use sodiumoxide::crypto::box_::curve25519xsalsa20poly1305::{PublicKey, PUBLICKEY
 
 use std::ops::Deref;
 use neon::vm::{Call, JsResult};
-use neon::js::{JsNumber, Object};
+use neon::js::{JsNumber, Object, JsUndefined};
 use neon::js::binary::JsBuffer;
 use neon::mem::Managed;
 use neon_runtime::buffer;
 use cslice::{CMutSlice};
 
-use private_box::{encrypt as encrypt_rs, decrypt as decrypt_rs};
+use private_box::{encrypt as encrypt_rs, decrypt as decrypt_rs, init as init_rs};
 
+fn init(call: Call) -> JsResult<JsUndefined>{
+    init_rs();
+
+    Ok(JsUndefined::new())
+}
 
 fn encrypt(call: Call){
     let scope = call.scope;
@@ -102,5 +107,6 @@ fn decrypt(call: Call)-> JsResult<JsBuffer>{
 }
 
 register_module!(m, {
-    m.export("decrypt", decrypt)
+    m.export("decrypt", decrypt);
+    m.export("init", init)
 });
