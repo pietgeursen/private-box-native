@@ -9,7 +9,7 @@ use sodiumoxide::crypto::box_::curve25519xsalsa20poly1305::{PublicKey, PUBLICKEY
 
 use std::ops::Deref;
 use neon::vm::{Lock, Call, JsResult};
-use neon::js::{JsNumber, Object, JsUndefined, JsArray};
+use neon::js::{JsNumber, Object, JsValue, JsUndefined, JsArray};
 use neon::js::binary::JsBuffer;
 use neon::mem::Managed;
 use neon_runtime::buffer;
@@ -29,7 +29,7 @@ fn encrypt(call: Call){
 }
 
 
-fn decrypt(call: Call)-> JsResult<JsBuffer>{
+fn decrypt(call: Call)-> JsResult<JsValue>{
     let mut cypher_text_checked = call
         .arguments
         .require(call.scope, 0)?
@@ -63,19 +63,28 @@ fn decrypt(call: Call)-> JsResult<JsBuffer>{
     let secret_key = SecretKey(secret_key_array);
     
     //TODO: remove unwrap and make whole function return undefined if no result.
-    let mut plain_text = decrypt_rs(&cypher_text_vec, &secret_key).unwrap();
-    let mut result_buffer = JsBuffer::new(call.scope, plain_text.len() as u32).unwrap();
+    let mut result = decrypt_rs(&cypher_text_vec, &secret_key);
 
-    result_buffer.grab(|mut contents|{
-        let slice = &contents.as_slice();
+    match result {
+        Some(data) => {
+            let mut result_buffer = JsBuffer::new(call.scope, data.len() as u32).unwrap();
 
-        for i in 0..slice.len(){
-            contents[i] = plain_text[i]; 
+            result_buffer.grab(|mut contents|{
+                let slice = &contents.as_slice();
+
+                for i in 0..slice.len(){
+                    contents[i] = data[i]; 
+                }
+            });
+
+            Ok(result_buffer.upcast())
+    
         }
-    });
-
-    Ok(result_buffer)
-
+        None => {
+            Ok(JsUndefined::new().upcast())
+        }
+    }
+    
 }
 
 register_module!(m, {
