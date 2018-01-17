@@ -1,0 +1,18 @@
+{
+  "name": "private-box-native",
+  "version": "0.1.0",
+  "description": "Node bindings to private-box-rs",
+  "main": "lib/index.js",
+  "author": "Piet Geursen <pietgeursen@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "neon-cli": "^0.1.22"
+  },
+  "scripts": {
+    "install": "neon build",
+    "test": "node test/*.js"
+  },
+  "devDependencies": {
+    "tape": "^4.8.0"
+  }
+}

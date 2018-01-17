@@ -1,0 +1,20 @@
+[package]
+name = "private-box-native"
+version = "0.1.0"
+authors = ["Piet Geursen <pietgeursen@gmail.com>"]
+license = "MIT"
+build = "build.rs"
+
+[lib]
+name = "private_box_native"
+crate-type = ["dylib"]
+
+[build-dependencies]
+neon-build = "0.1.22"
+
+[dependencies]
+neon = "0.1.22"
+neon-runtime = "0.1.15"
+private-box = "0.3"
+sodiumoxide = "0.0.16"
+cslice = "0.2.0"
