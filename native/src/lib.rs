@@ -3,12 +3,9 @@ extern crate neon;
 extern crate neon_runtime;
 extern crate private_box;
 extern crate sodiumoxide;
-extern crate cslice;
 #[macro_use]
 extern crate arrayref;
 
-extern crate futures;
-extern crate futures_cpupool;
 
 use sodiumoxide::crypto::box_::curve25519xsalsa20poly1305::{PublicKey, PUBLICKEYBYTES, SecretKey, SECRETKEYBYTES};
 
