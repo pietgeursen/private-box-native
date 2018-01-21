@@ -14,7 +14,6 @@ test('decrypts ok', function(t) {
   t.end()
 })
 
-
 test('returns undefined when key is wrong', function(t) {
 
   var publicKey = Buffer.from(test_data.keys[0].publicKey, 'base64')
@@ -35,11 +34,8 @@ test('decrypts ok async', function(t) {
   var msg = Buffer.from(test_data.msg, 'base64')
 
   decrypt(cypherText, secretKey, (err, result) => {
-    console.log("oh fuck yeah, we got called back err, result", err, result);
     t.deepEqual(result, msg)
     t.end()
   }); 
 
 })
-
-
