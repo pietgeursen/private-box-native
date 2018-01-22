@@ -6,10 +6,11 @@
   "author": "Piet Geursen <pietgeursen@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "neon-cli": "^0.1.22"
+    "neon-cli": "^0.1.22",
+    "prebuild-install": "^2.4.1"
   },
   "scripts": {
-    "install": "neon build",
+    "install": "prebuild-install || neon build",
     "test": "tape test/*.js"
   },
   "devDependencies": {
