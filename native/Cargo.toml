@@ -15,6 +15,8 @@ neon-build = "0.1.22"
 [dependencies]
 neon = "0.1.22"
 neon-runtime = "0.1.15"
-private-box = "0.3.5"
 sodiumoxide = "0.0.16"
 arrayref = "0.3.4"
+
+[dependencies.private-box]
+path="../../private-box-rs"

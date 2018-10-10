@@ -7,10 +7,17 @@
   "license": "MIT",
   "dependencies": {
     "neon-cli": "^0.1.22",
-    "prebuild-install": "^2.4.1"
+    "prebuild-install": "^2.4.1",
+    "sodium": "^2.0.3",
+    "ssb-keys": "^7.0.14"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pietgeursen/private-box-native.git"
   },
   "scripts": {
-    "install": "prebuild-install || neon build",
+    "install": "prebuild-install --force",
+    "build": "neon build",
     "test": "tape test/*.js"
   },
   "devDependencies": {
