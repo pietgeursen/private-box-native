@@ -1,0 +1,14 @@
+[package]
+name = "private-box-native"
+version = "0.1.0"
+authors = ["Piet Geursen <pietgeursen@gmail.com>"]
+license = "MIT"
+
+[lib]
+name = "private_box_native"
+
+[dependencies]
+sodiumoxide = "0.0.16"
+
+[dependencies.private-box]
+path="../../private-box-rs"
