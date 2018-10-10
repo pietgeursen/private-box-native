@@ -16,12 +16,13 @@
     "url": "https://github.com/pietgeursen/private-box-native.git"
   },
   "scripts": {
-    "install": "prebuild-install --force",
-    "build": "neon build",
+    "install": "ncmake rebuild",
+    "build": "ncmake rebuild",
     "test": "tape test/*.js"
   },
   "devDependencies": {
     "marky": "^1.2.0",
+    "node-cmake": "^2.5.1",
     "private-box": "^0.2.1",
     "pull-stream": "^3.6.1",
     "tape": "^4.8.0"
