@@ -6,7 +6,9 @@ license = "MIT"
 
 [lib]
 name = "private_box_native"
-crate-type = ["dylib"]
+crate-type = ["cdylib"]
+stage = 1
 
 [dependencies.private-box]
 path="../../private-box-rs"
+stage = 0

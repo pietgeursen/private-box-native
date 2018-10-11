@@ -45,6 +45,6 @@ add_dependencies(${PROJECT_NAME} native)
 
 # Specify Example's link libraries
 target_link_libraries(${PROJECT_NAME}
-    debug "${CMAKE_SOURCE_DIR}/native/target/debug/libprivate_box_native.a"
-    optimized "${CMAKE_SOURCE_DIR}/native/target/release/libprivate_box_native.a"
+    debug "${CMAKE_SOURCE_DIR}/native/target/debug/libprivate_box_native.so"
+    optimized "${CMAKE_SOURCE_DIR}/native/target/release/libprivate_box_native.so"
     )

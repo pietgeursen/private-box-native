@@ -25,4 +25,19 @@ WTF is happening?
   - I think it's not. But I don't _think_ that should matter. As long as sodium is statically linked. => not true!
     - private-box-rs needs to be compiled with the env vars set.
 - maybe the env vars need to be set everywhere?
-- 
+
+
+libs
+
+node.so -> native.a -> private-box.a -> sodium.a
+
+as soon as one lib is dynamic, all the sub libs need to have PIC because otherwise they'll overlap the address space.
+
+
+options:
+
+- [ ] node.so -> native.cdylib -> private-box.rlib -> sodium.a
+- [ ] node.so -> native.a -> private-box.rlib -> sodium.a
+- [ ] node.so -> native.cdylib -> private-box.dylib -> sodium.a
+- [ ] node.so -> native.a -> private-box.dylib -> sodium.a
+
