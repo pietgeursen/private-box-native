@@ -1,0 +1,6 @@
+export SODIUM_STATIC=1 
+export SODIUM_INSTALL_DIR=@SODIUM_INSTALL_DIR@ 
+export SODIUM_LIB_DIR=@SODIUM_LIB_DIR@ 
+
+cargo build 
+cargo build --release 

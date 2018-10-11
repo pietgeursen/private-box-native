@@ -4,13 +4,9 @@ version = "0.1.0"
 authors = ["Piet Geursen <pietgeursen@gmail.com>"]
 license = "MIT"
 
-
 [lib]
 name = "private_box_native"
-crate-type = ["staticlib"]
-
-[dependencies]
-sodiumoxide = "0.0.16"
+crate-type = ["dylib"]
 
 [dependencies.private-box]
 path="../../private-box-rs"

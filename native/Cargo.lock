@@ -36,7 +36,6 @@ name = "private-box-native"
 version = "0.1.0"
 dependencies = [
  "private-box 0.3.5",
- "sodiumoxide 0.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

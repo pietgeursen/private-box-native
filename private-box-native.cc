@@ -1,13 +1,13 @@
 #include <nan.h>
-#include "private_box.h"
+#include "private-box.h"
 
 namespace demo {
 
 NAN_METHOD(hello) {
-  const uint8_t cypher[32] = {};
-  const uint8_t key[32] = {};
-  uint8_t result[32] = {};
-  decrypt(cypher, 32, key, result, 32);
+  const uint8_t cypher[64] = {};
+  const uint8_t key[64] = {};
+  uint8_t result[64] = {};
+  decrypt(cypher, 64, key, result, 64);
   info.GetReturnValue().Set(Nan::New("world").ToLocalChecked());
 }
 
