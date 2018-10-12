@@ -43,7 +43,7 @@ napi_value decrypt(napi_env env, napi_callback_info info) {
   status = napi_create_reference(env, args[1], 0, &refArg1);
   assert(status == napi_ok);
 
-  //get pointers to start of buffers. This might require some fernangling because of gc.
+  //get pointers to start of buffers. 
   void * cypher;
   void * sk;
   size_t cypherLen;
@@ -59,10 +59,10 @@ napi_value decrypt(napi_env env, napi_callback_info info) {
   void * result;
   napi_create_buffer(env, cypherLen, &result, &resultBuffer);
 
-  //do the decryption. If result == 0 return undefined
+  //do the decryption. If decrypt returns 0 then it decrypted something.
   size_t resultLen;
   intptr_t decrytErrorCode = decrypt((const uint8_t *)cypher, cypherLen, (const uint8_t *)sk, (uint8_t *)result, &resultLen);
-  //
+  
   //Delete refs to input args.
   status = napi_delete_reference(env, refArg0);
   assert(status == napi_ok);
@@ -70,8 +70,8 @@ napi_value decrypt(napi_env env, napi_callback_info info) {
   assert(status == napi_ok);
 
   //All this just to slice the buffer...
-  napi_value buffSlice;
-  status = napi_get_named_property(env, resultBuffer, "slice", &buffSlice );
+  napi_value sliceFn;
+  status = napi_get_named_property(env, resultBuffer, "slice", &sliceFn );
   assert(status == napi_ok);
 
   napi_value arg0, arg1;
@@ -80,10 +80,10 @@ napi_value decrypt(napi_env env, napi_callback_info info) {
 
   napi_value sliceArgs[2] = {arg0, arg1};
 
-  napi_value resultBuffer2;
-  status = napi_call_function(env, resultBuffer, buffSlice, 2, sliceArgs, &resultBuffer2);
+  napi_value resultSlice;
+  status = napi_call_function(env, resultBuffer, sliceFn, 2, sliceArgs, &resultSlice);
 
-  return decrytErrorCode == 0 ? resultBuffer2 : undefined;
+  return decrytErrorCode == 0 ? resultSlice : undefined;
 }
 
 #define DECLARE_NAPI_METHOD(name, func)                          \
