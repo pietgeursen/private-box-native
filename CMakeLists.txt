@@ -16,13 +16,13 @@ configure_file("build-native.sh.in" "build-native.sh")
 # Add rust_example as a CMake target
 ExternalProject_Add(
   native
-  DOWNLOAD_COMMAND ""
-  CONFIGURE_COMMAND ""
-  #BUILD_COMMAND SODIUM_INSTALL_DIR=${CMAKE_BINARY_DIR}/Rust/local SODIUM_LIB_DIR=${CMAKE_BINARY_DIR}/Rust/local SODIUM_STATIC=1 cargo build COMMAND SODIUM_INSTALL_DIR=${CMAKE_BINARY_DIR}/Rust/local SODIUM_LIB_DIR=${CMAKE_BINARY_DIR}/Rust/local SODIUM_STATIC=1 cargo build --release
   BUILD_COMMAND sh "${CMAKE_CURRENT_BINARY_DIR}/build-native.sh"
   BINARY_DIR "${CMAKE_SOURCE_DIR}/native"
+  LOG_BUILD ON
+  DOWNLOAD_COMMAND ""
+  CONFIGURE_COMMAND ""
   INSTALL_COMMAND ""
-  LOG_BUILD ON)
+  )
 
 project(private_box_native VERSION 1.0.0)
 

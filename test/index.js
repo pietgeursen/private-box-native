@@ -3,10 +3,14 @@ var {decrypt} = require('../')
 
 var test_data = require('./simple.json')
 
-test('decrypts ok', function (t) {
+test.only('decrypts ok', function (t) {
   var secretKey = Buffer.from(test_data.keys[0].secretKey, 'base64')
+  console.log('sk length: ', secretKey.length)
   var cypherText = Buffer.from(test_data.cypherText, 'base64')
+  console.log('ct length: ', cypherText.length)
   var msg = Buffer.from(test_data.msg, 'base64')
+
+  console.log('expected message is: ', msg)
 
   var result = decrypt(cypherText, secretKey)
 

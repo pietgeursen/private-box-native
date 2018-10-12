@@ -1,20 +1,101 @@
-#include <nan.h>
-#include "private-box.h"
+#define NAPI_VERSION 3
+#include <node_api.h>
+#include "private_box.h"
 
-namespace demo {
+#include <assert.h>
+#include <stdio.h>
 
-NAN_METHOD(hello) {
-  const uint8_t cypher[64] = {};
-  const uint8_t key[64] = {};
-  uint8_t result[64] = {};
-  decrypt(cypher, 64, key, result, 64);
-  info.GetReturnValue().Set(Nan::New("world").ToLocalChecked());
+napi_value decrypt(napi_env env, napi_callback_info info) {
+  napi_status status;
+  napi_value undefined;
+  napi_get_undefined(env, &undefined);
+
+  size_t argc = 2;
+  napi_value args[2];
+  status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+  assert(status == napi_ok);
+
+  if (argc < 2) {
+    napi_throw_type_error(env, nullptr, "Wrong number of arguments, expected 2 args.");
+    return nullptr;
+  }
+
+  //check arg0 is a buffer
+  bool isArg0Buffer;  
+  bool isArg1Buffer;  
+  status = napi_is_buffer(env, args[0], &isArg0Buffer);
+  assert(status == napi_ok);
+
+  status = napi_is_buffer(env, args[1], &isArg1Buffer);
+  assert(status == napi_ok);
+
+  if (!isArg0Buffer || !isArg1Buffer) {
+    napi_throw_type_error(env, nullptr, "Expected args to be buffers");
+    return nullptr;
+  }
+  
+  //use napi_create_reference to stop gc fucking with the underlying buffer.
+  //not sure if this is needed. But better safe than sorry.
+  napi_ref refArg0;
+  napi_ref refArg1;
+  status = napi_create_reference(env, args[0], 0, &refArg0);
+  assert(status == napi_ok);
+  status = napi_create_reference(env, args[1], 0, &refArg1);
+  assert(status == napi_ok);
+
+  //get pointers to start of buffers. This might require some fernangling because of gc.
+  void * cypher;
+  void * sk;
+  size_t cypherLen;
+  size_t skLen;
+  status = napi_get_buffer_info(env, args[0], &cypher, &cypherLen);
+  assert(status == napi_ok);
+
+  status = napi_get_buffer_info(env, args[1], &sk, &skLen);
+  assert(status == napi_ok);
+
+  //make a new buffer the same size as the cypher text.
+  napi_value resultBuffer;
+  void * result;
+  napi_create_buffer(env, cypherLen, &result, &resultBuffer);
+
+  //do the decryption. If result == 0 return undefined
+  size_t resultLen;
+  intptr_t decrytErrorCode = decrypt((const uint8_t *)cypher, cypherLen, (const uint8_t *)sk, (uint8_t *)result, &resultLen);
+  //else return the buffer
+  //
+  //Delete refs to input args.
+  status = napi_delete_reference(env, refArg0);
+  assert(status == napi_ok);
+  status = napi_delete_reference(env, refArg1);
+  assert(status == napi_ok);
+
+  //All this just to slice the buffer...
+  napi_value buffSlice;
+  status = napi_get_named_property(env, resultBuffer, "slice", &buffSlice );
+  assert(status == napi_ok);
+
+  napi_value arg0, arg1;
+  napi_create_int32(env, 0, &arg0);
+  napi_create_int32(env, resultLen, &arg1);
+
+  napi_value sliceArgs[2] = {arg0, arg1};
+
+  napi_value resultBuffer2;
+  status = napi_call_function(env, resultBuffer, buffSlice, 2, sliceArgs, &resultBuffer2);
+
+  return decrytErrorCode == 0 ? resultBuffer2 : undefined;
 }
 
-NAN_MODULE_INIT(init) {
-    NAN_EXPORT(target, hello);
+#define DECLARE_NAPI_METHOD(name, func)                          \
+  { name, 0, func, 0, 0, 0, napi_default, 0 }
+
+napi_value Init(napi_env env, napi_value exports) {
+  napi_status status;
+  napi_property_descriptor addDescriptor = DECLARE_NAPI_METHOD("decrypt", decrypt);
+  status = napi_define_properties(env, exports, 1, &addDescriptor);
+  assert(status == napi_ok);
+  return exports;
 }
 
-NODE_MODULE(MODULE_NAME, init)
-
-} // namespace demo
+NAPI_MODULE(NODE_GYP_MODULE_NAME, Init)

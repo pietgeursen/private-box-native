@@ -10,7 +10,7 @@ intptr_t decrypt(const uint8_t *p_cypher_text,
                  uintptr_t cypher_text_len,
                  const uint8_t *p_key,
                  uint8_t *p_result_buf,
-                 uintptr_t result_buf_len);
+                 uintptr_t *result_buf_len);
 
 void init();
 
