@@ -82,6 +82,7 @@ napi_value decrypt(napi_env env, napi_callback_info info) {
 
   napi_value resultSlice;
   status = napi_call_function(env, resultBuffer, sliceFn, 2, sliceArgs, &resultSlice);
+  assert(status == napi_ok);
 
   return decrytErrorCode == 0 ? resultSlice : undefined;
 }
