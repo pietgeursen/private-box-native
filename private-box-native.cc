@@ -62,7 +62,6 @@ napi_value decrypt(napi_env env, napi_callback_info info) {
   //do the decryption. If result == 0 return undefined
   size_t resultLen;
   intptr_t decrytErrorCode = decrypt((const uint8_t *)cypher, cypherLen, (const uint8_t *)sk, (uint8_t *)result, &resultLen);
-  //else return the buffer
   //
   //Delete refs to input args.
   status = napi_delete_reference(env, refArg0);
