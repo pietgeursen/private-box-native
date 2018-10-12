@@ -90,6 +90,7 @@ napi_value decrypt(napi_env env, napi_callback_info info) {
   { name, 0, func, 0, 0, 0, napi_default, 0 }
 
 napi_value Init(napi_env env, napi_value exports) {
+  init(); //Init private box
   napi_status status;
   napi_property_descriptor addDescriptor = DECLARE_NAPI_METHOD("decrypt", decrypt);
   status = napi_define_properties(env, exports, 1, &addDescriptor);
