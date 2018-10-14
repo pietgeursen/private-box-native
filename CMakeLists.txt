@@ -25,12 +25,15 @@ ExternalProject_Add(
   )
 
 project(private_box_native VERSION 1.0.0)
+add_definitions(-DNAPI_VERSION=3)
+
 
 include(NodeJS.cmake)
 nodejs_init()
 
 add_nodejs_module(${PROJECT_NAME} private-box-native.cc)
 add_dependencies(${PROJECT_NAME} native)
+target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_SOURCE_DIR}/node_modules/node-addon-api")
 
 # Specify Example's link libraries
 target_link_libraries(${PROJECT_NAME}

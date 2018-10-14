@@ -2,9 +2,14 @@
   "name": "private-box-native",
   "version": "0.1.0",
   "description": "Node bindings to private-box-rs",
-  "main": "lib/index.js",
+  "main": "index.js",
   "author": "Piet Geursen <pietgeursen@gmail.com>",
   "license": "MIT",
+  "binary": {
+    "napi_versions": [
+      3
+    ]
+  },
   "dependencies": {
     "neon-cli": "^0.1.22",
     "prebuild-install": "^2.4.1",
@@ -18,11 +23,14 @@
   "scripts": {
     "install": "ncmake rebuild",
     "build": "ncmake rebuild",
+    "prebuild": "prebuild -t 3 -r napi ",
     "test": "tape test/*.js"
   },
   "devDependencies": {
     "marky": "^1.2.0",
+    "node-addon-api": "^1.5.0",
     "node-cmake": "^2.5.1",
+    "prebuild": "^8.1.0",
     "private-box": "^0.2.1",
     "pull-stream": "^3.6.1",
     "tape": "^4.8.0"
