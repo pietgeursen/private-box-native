@@ -8,5 +8,5 @@ license = "MIT"
 name = "private_box_native"
 crate-type = ["dylib"]
 
-[dependencies.private-box]
-path="../../private-box-rs"
+[dependencies]
+private-box = "0.4.0"
