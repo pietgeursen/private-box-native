@@ -1,6 +1,6 @@
 {
   "name": "private-box-native",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Node bindings to private-box-rs",
   "main": "index.js",
   "author": "Piet Geursen <pietgeursen@gmail.com>",
