@@ -24,7 +24,7 @@
     "install": "ncmake rebuild",
     "build-rs": "./build-native.sh",
     "build": "npm run build-rs",
-    "prebuild": "prebuild -t 3 -r napi ",
+    "prebuild": "prebuild -t 3 -r napi --include-regx '\\.so$'",
     "test": "tape test/*.js"
   },
   "devDependencies": {

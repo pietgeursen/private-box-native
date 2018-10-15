@@ -19,3 +19,7 @@ napi todos:
  - [ ] prebuild --all 
   - [ ] are "flavours" how you set the target triple?
  - [ ] could we use cross somehow? 
+
+ now blocked on gyp storing the relative path to the privatebox lib in the .node binding.
+ - Get fpic working when building static libs for all the rust stuff. 
+ - check out the wrapper thing with binding gyp.
