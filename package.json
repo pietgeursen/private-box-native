@@ -11,17 +11,16 @@
     ]
   },
   "dependencies": {
-    "prebuild-install": "^2.4.1",
-    "ssb-keys": "^7.0.14"
+    "prebuild-install": "^5.2.0"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/pietgeursen/private-box-native.git"
   },
   "scripts": {
-    "install": "prebuild-install || npm run build",
+    "install": "prebuild-install -r napi -t 3",
     "build-rs": "./build-native.sh",
-    "prebuild": "prebuild -t 3 -r napi --include-regex '\\.(node|so)$'",
+    "prebuild": "prebuild -r napi --include-regex '\\.(node|so)$'",
     "build": "npm run build-rs && npm run prebuild",
     "test": "tape test/*.js"
   },
