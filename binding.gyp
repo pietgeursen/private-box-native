@@ -3,7 +3,10 @@
   {
     "target_name": "binding",
       "sources": [ "private-box-native.cc" ],
-      "libraries": ["<(module_root_dir)/native/target/release/libprivate_box_native.so" ]
+      "libraries": ["<(module_root_dir)/native/target/release/libprivate_box_native.so" ],
+      "defines": [
+        "NAPI_VERSION=<(napi_build_version)",
+      ],
   }
   ]
 }
