@@ -11,9 +11,7 @@
     ]
   },
   "dependencies": {
-    "neon-cli": "^0.1.22",
     "prebuild-install": "^2.4.1",
-    "sodium": "^2.0.3",
     "ssb-keys": "^7.0.14"
   },
   "repository": {
@@ -21,16 +19,14 @@
     "url": "https://github.com/pietgeursen/private-box-native.git"
   },
   "scripts": {
-    "install": "ncmake rebuild",
+    "install": "prebuild-install || npm run build",
     "build-rs": "./build-native.sh",
-    "build": "npm run build-rs",
     "prebuild": "prebuild -t 3 -r napi --include-regx '\\.so$'",
+    "build": "npm run build-rs && npm run prebuild",
     "test": "tape test/*.js"
   },
   "devDependencies": {
     "marky": "^1.2.0",
-    "node-addon-api": "^1.5.0",
-    "node-cmake": "^2.5.1",
     "prebuild": "^8.1.0",
     "private-box": "^0.2.1",
     "pull-stream": "^3.6.1",
