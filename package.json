@@ -18,7 +18,7 @@
     "url": "https://github.com/pietgeursen/private-box-native.git"
   },
   "scripts": {
-    "install": "prebuild-install -r napi -t 3",
+    "install": "prebuild-install -r napi",
     "build-rs": "./build-native.sh",
     "prebuild": "prebuild -r napi --include-regex '\\.(node|so)$'",
     "build": "npm run build-rs && npm run prebuild",
