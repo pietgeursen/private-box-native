@@ -1,5 +1,4 @@
 extern crate private_box;
-
 use private_box::{SecretKey, SECRETKEYBYTES};
 
 use private_box::{decrypt as decrypt_rs, init as init_rs};
