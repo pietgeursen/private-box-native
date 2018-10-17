@@ -25,13 +25,14 @@ test('returns undefined when key is wrong', function (t) {
   t.end()
 })
 
-test.skip('decrypts ok async', function (t) {
+test('decrypts ok async', function (t) {
   t.plan(1)
   var secretKey = Buffer.from(test_data.keys[0].secretKey, 'base64')
   var cypherText = Buffer.from(test_data.cypherText, 'base64')
   var msg = Buffer.from(test_data.msg, 'base64')
 
   decrypt(cypherText, secretKey, (err, result) => {
+    t.error(err)
     t.deepEqual(result, msg)
     t.end()
   })

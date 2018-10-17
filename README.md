@@ -11,8 +11,8 @@ napi todos:
    - [x] need to work out how to pass down project specific vars hopefully in the cargo.toml
    - [x] it would be good if -native doesn't require sodiumoxide. It should just use re-exported constants from private box rs
 
- - [ ] write some c
- - [ ] get a test passing
+ - [x] write some c
+ - [x] get a test passing
  
    - [ ] how to handle incorrect args to the function
  - [x] set up [cmakejs](https://stackoverflow.com/questions/31162438/how-can-i-build-rust-code-with-a-c-qt-cmake-project)
@@ -20,6 +20,7 @@ napi todos:
   - [ ] are "flavours" how you set the target triple?
  - [ ] could we use cross somehow? 
 
- now blocked on gyp storing the relative path to the privatebox lib in the .node binding.
- - Get fpic working when building static libs for all the rust stuff. 
- - check out the wrapper thing with binding gyp.
+ What did I learn?
+ - cross isn't _that_ easy to understand. Or rather, I need to study it for longer.
+  - It's not clear to me how / when qemu gets loaded.
+
