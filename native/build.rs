@@ -9,13 +9,13 @@ fn main() {
         // bindings for.
         .whitelist_function("napi_.+")
         .whitelist_type("napi_.+")
-        .header("node_api.h")
+        .header("./src/napi_sys/node_api.h")
         // Finish the builder and generate the bindings.
         .generate()
         // Unwrap the Result and panic on failure.
         .expect("Unable to generate bindings");
 
     bindings
-        .write_to_file("./src/napi-sys.rs")
+        .write_to_file("./src/napi_sys/bindings.rs")
         .expect("Couldn't write bindings!");
 }
