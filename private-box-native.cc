@@ -14,13 +14,10 @@ struct DecryptContext {
   uint8_t *p_result_buf;
   uintptr_t result_buf_len;
   intptr_t result_code;
-  napi_callback_info info;
   napi_ref refArg0;
   napi_ref refArg1;
   napi_ref refResultBuffer;
-  napi_value resultBuffer;
-  napi_value completionCallback;
-
+  napi_ref refCompletionCallback;
 };
 
 void execute_decrypt(napi_env env, void* data){
@@ -34,26 +31,21 @@ void execute_decrypt(napi_env env, void* data){
      ctx->p_result_buf,
      &ctx->result_buf_len
      );
-
 }
 
 void complete_decrypt(napi_env env, napi_status status, void* data){
   napi_value null;
   napi_get_undefined(env, &null);
 
-
   DecryptContext* ctx = (DecryptContext*) data;
-  //Delete refs to input ctx.
-  status = napi_delete_reference(env, ctx->refArg0);
-  assert(status == napi_ok);
-  status = napi_delete_reference(env, ctx->refArg1);
-  assert(status == napi_ok);
-  status = napi_delete_reference(env, ctx->refResultBuffer);
-  assert(status == napi_ok);
 
   //All this just to slice the buffer...
+  napi_value resultBuffer;
+  status = napi_get_reference_value(env, ctx->refResultBuffer, &resultBuffer);
+  assert(status == napi_ok);
+
   napi_value sliceFn;
-  status = napi_get_named_property(env, ctx->resultBuffer, "slice", &sliceFn );
+  status = napi_get_named_property(env, resultBuffer, "slice", &sliceFn );
   assert(status == napi_ok);
 
   napi_value arg0, arg1;
@@ -64,22 +56,37 @@ void complete_decrypt(napi_env env, napi_status status, void* data){
 
   napi_value resultSlice;
 
-  status = napi_call_function(env, ctx->resultBuffer, sliceFn, 2, sliceArgs, &resultSlice);
+  status = napi_call_function(env, resultBuffer, sliceFn, 2, sliceArgs, &resultSlice);
   assert(status == napi_ok);
 
-  //clean up context object
-  delete ctx;
+
+  napi_value completionCallback;
+  status = napi_get_reference_value(env, ctx->refCompletionCallback, &completionCallback);
+  assert(status == napi_ok);
 
   napi_value completionArgs[] = {null, resultSlice};
   napi_value global, cbResult;
   status = napi_get_global(env, &global);
   assert(status == napi_ok);
 
-  status = napi_call_function(env, global, ctx->completionCallback, 2, completionArgs, &cbResult);
+  printf("here5\n");
+  status = napi_call_function(env, global, completionCallback, 2, completionArgs, &cbResult);
+  delete ctx;
+  assert(status == napi_ok);
+  //clean up context object
+  
+  //Delete refs to input ctx.
+  status = napi_delete_reference(env, ctx->refArg0);
+  assert(status == napi_ok);
+  status = napi_delete_reference(env, ctx->refArg1);
+  assert(status == napi_ok);
+  status = napi_delete_reference(env, ctx->refResultBuffer);
   assert(status == napi_ok);
 }
 
 napi_value decrypt_async(napi_env env, napi_callback_info info) {
+  DecryptContext* ctx = new DecryptContext;
+
   napi_status status;
   napi_value undefined;
   napi_get_undefined(env, &undefined);
@@ -97,23 +104,23 @@ napi_value decrypt_async(napi_env env, napi_callback_info info) {
   //check arg0 is a buffer
   bool isArg0Buffer;  
   bool isArg1Buffer;  
-  status = napi_is_buffer(env, args[0], &isArg0Buffer);
+  status = napi_is_arraybuffer(env, args[0], &isArg0Buffer);
   assert(status == napi_ok);
 
-  status = napi_is_buffer(env, args[1], &isArg1Buffer);
+  status = napi_is_arraybuffer(env, args[1], &isArg1Buffer);
   assert(status == napi_ok);
 
   if (!isArg0Buffer || !isArg1Buffer) {
-    napi_throw_type_error(env, nullptr, "Expected 2 buffers and a callback.");
+    napi_throw_type_error(env, nullptr, "Expected 2 arraybuffers and a callback.");
     return nullptr;
   }
-  
+
   //use napi_create_reference to stop gc fucking with the underlying buffer.
-  napi_ref refArg0;
-  napi_ref refArg1;
-  status = napi_create_reference(env, args[0], 0, &refArg0);
+  status = napi_create_reference(env, args[0], 1, &ctx->refArg0);
   assert(status == napi_ok);
-  status = napi_create_reference(env, args[1], 0, &refArg1);
+  status = napi_create_reference(env, args[1], 1, &ctx->refArg1);
+  assert(status == napi_ok);
+  status = napi_create_reference(env, args[2], 1, &ctx->refCompletionCallback);
   assert(status == napi_ok);
 
   //get pointers to start of buffers. 
@@ -121,37 +128,31 @@ napi_value decrypt_async(napi_env env, napi_callback_info info) {
   void * sk;
   size_t cypherLen;
   size_t skLen;
-  status = napi_get_buffer_info(env, args[0], &cypher, &cypherLen);
+  status = napi_get_arraybuffer_info(env, args[0], &cypher, &cypherLen);
   assert(status == napi_ok);
 
-  status = napi_get_buffer_info(env, args[1], &sk, &skLen);
+  status = napi_get_arraybuffer_info(env, args[1], &sk, &skLen);
   assert(status == napi_ok);
 
   //make a new buffer the same size as the cypher text.
   napi_value resultBuffer;
   void * result;
-  napi_create_buffer(env, cypherLen, &result, &resultBuffer);
+  napi_create_arraybuffer(env, cypherLen, &result, &resultBuffer);
 
-  napi_ref refResult;
-  status = napi_create_reference(env, resultBuffer, 0, &refResult);
+  status = napi_create_reference(env, resultBuffer, 1, &ctx->refResultBuffer);
   assert(status == napi_ok);
 
-  DecryptContext* ctx = new DecryptContext;
+  ctx->p_result_buf = (uint8_t *) result;
   ctx->p_cypher_text = (const uint8_t *) cypher;
   ctx->cypher_text_len = cypherLen;
   ctx->p_key = (const uint8_t *) sk;
-  ctx->info = info;
-  ctx->refArg0 = refArg0; 
-  ctx->refArg1 = refArg1; 
-  ctx->refResultBuffer = refResult; 
-  ctx->completionCallback = args[2];
 
   napi_value workName;
-  const char * workNameString = "private_box_decyrpt_async_task";
+  const char * workNameString = "private_box_decrypt_async_task";
 
   napi_create_string_utf8(env, workNameString, sizeof(workNameString), &workName);
   napi_async_work work;
-  status = napi_create_async_work(env, NULL, workName, execute_decrypt, complete_decrypt, (void *) ctx, &work);
+  status = napi_create_async_work(env, nullptr, workName, execute_decrypt, complete_decrypt, (void *) ctx, &work);
   assert(status == napi_ok);
 
   status = napi_queue_async_work(env, work);
@@ -178,14 +179,14 @@ napi_value decrypt(napi_env env, napi_callback_info info) {
   //check arg0 is a buffer
   bool isArg0Buffer;  
   bool isArg1Buffer;  
-  status = napi_is_buffer(env, args[0], &isArg0Buffer);
+  status = napi_is_arraybuffer(env, args[0], &isArg0Buffer);
   assert(status == napi_ok);
 
-  status = napi_is_buffer(env, args[1], &isArg1Buffer);
+  status = napi_is_arraybuffer(env, args[1], &isArg1Buffer);
   assert(status == napi_ok);
 
   if (!isArg0Buffer || !isArg1Buffer) {
-    napi_throw_type_error(env, nullptr, "Expected args to be buffers");
+    napi_throw_type_error(env, nullptr, "Expected args to be arraybuffers");
     return nullptr;
   }
   
@@ -193,9 +194,9 @@ napi_value decrypt(napi_env env, napi_callback_info info) {
   //not sure if this is needed. But better safe than sorry.
   napi_ref refArg0;
   napi_ref refArg1;
-  status = napi_create_reference(env, args[0], 0, &refArg0);
+  status = napi_create_reference(env, args[0], 1, &refArg0);
   assert(status == napi_ok);
-  status = napi_create_reference(env, args[1], 0, &refArg1);
+  status = napi_create_reference(env, args[1], 1, &refArg1);
   assert(status == napi_ok);
 
   //get pointers to start of buffers. 

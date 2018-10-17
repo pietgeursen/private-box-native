@@ -27,7 +27,7 @@
   "devDependencies": {
     "marky": "^1.2.0",
     "prebuild": "^8.1.0",
-    "private-box": "^0.2.1",
+    "private-box": "^0.3.0",
     "pull-stream": "^3.6.1",
     "tape": "^4.8.0"
   }
