@@ -25,15 +25,13 @@ pub extern "C" fn init(){
 pub extern "C" fn decrypt(env: napi_env, info: napi_callback_info) -> napi_value {
     match try_decrypt(env, info) {
         Ok(result) => result,
-        Err(Error(err @ ErrorKind::ArgumentTypeError, _)) => {
-            throw_type_error(env, err).unwrap();
+        Err(Error(ErrorKind::NotARecipient, _)) => {
             get_undefined_value(env).unwrap()
         },
-        Err(Error(err @ ErrorKind::SecretKeyError, _)) => {
+        Err(Error(err, _)) => {
             throw_type_error(env, err).unwrap();
             get_undefined_value(env).unwrap()
-        },
-        Err(_) => get_undefined_value(env).unwrap() 
+        }
     }
 }
 
