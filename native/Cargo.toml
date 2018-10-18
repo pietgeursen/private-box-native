@@ -9,7 +9,7 @@ name = "private_box_native"
 crate-type = ["dylib"]
 
 [dependencies]
-private-box = "0.4.2"
+private-box = "0.4.3"
 
 # [dependencies.private-box]
 # path = "../../private-box-rs"

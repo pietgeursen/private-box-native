@@ -4,13 +4,31 @@ use private_box::{SecretKey};
 mod napi_sys;
 use napi_sys::*;
 use std::{ptr, fmt, error};
+use std::error::Error;
 use std::os::raw::c_void;
+use std::ffi::CString;
 
 use private_box::{decrypt as decrypt_rs, init as init_rs};
 
 #[no_mangle]
 pub extern "C" fn init(){
     init_rs();
+}
+
+#[no_mangle]
+pub extern "C" fn decrypt(env: napi_env, info: napi_callback_info) -> napi_value {
+    match try_decrypt(env, info) {
+        Ok(result) => result,
+        Err(err @ DecryptError::ArgumentTypeError) => {
+            throw_type_error(env, err);
+            get_undefined_value(env).unwrap()
+        },
+        Err(err @ DecryptError::SecretKeyError) => {
+            throw_type_error(env, err);
+            get_undefined_value(env).unwrap()
+        },
+        Err(_) => get_undefined_value(env).unwrap() 
+    }
 }
 
 fn try_decrypt(env: napi_env, info: napi_callback_info) -> Result<napi_value, DecryptError> {
@@ -42,17 +60,23 @@ fn try_decrypt(env: napi_env, info: napi_callback_info) -> Result<napi_value, De
         })
 }
 
-#[no_mangle]
-pub extern "C" fn decrypt(env: napi_env, info: napi_callback_info) -> napi_value {
-    match try_decrypt(env, info) {
-        Ok(result) => result,
-        Err(_) => get_undefined_value(env).unwrap() 
-    }
-}
 
 #[no_mangle]
 pub extern "C" fn decrypt_async() -> isize{
     unimplemented!()
+}
+
+fn throw_type_error(env: napi_env, err: DecryptError) -> Result<(), DecryptError>{
+    let status: napi_status;
+    let msg = CString::new(err.description()).unwrap();
+    unsafe {
+        status = napi_throw_type_error(env, ptr::null(), msg.as_ptr() as * const i8);
+    }
+
+    match status {
+        napi_status_napi_ok => Ok(()),
+        _ => Err(DecryptError::NapiError)
+    }
 }
 
 fn get_undefined_value(env: napi_env)-> Result<napi_value, DecryptError>{
@@ -84,10 +108,28 @@ fn get_arg(env: napi_env, info: napi_callback_info, arg_index: usize) -> Result<
     }
 }
 
+fn check_is_buffer(env: napi_env, value: napi_value) -> Result<bool, DecryptError> {
+    let status: napi_status;
+    let mut result = false;
+    unsafe {
+        status = napi_is_buffer(env, value, &mut result)
+    }
+    match status {
+        napi_status_napi_ok => Ok(result),
+        _ => Err(DecryptError::NapiError)
+    }
+}
+
+
 fn get_buffer_info(env: napi_env, buffer: napi_value) -> Result<(*const u8, usize), DecryptError>{
     let status: napi_status;
     let mut buff_size = 0; 
     let mut p_buff: * mut c_void = ptr::null_mut(); 
+
+    let is_buffer = check_is_buffer(env, buffer)?;
+    if !is_buffer {
+        return Err(DecryptError::ArgumentTypeError)
+    }
 
     unsafe {
         status = napi_get_buffer_info(env, buffer, &mut p_buff, &mut buff_size);
@@ -117,6 +159,7 @@ fn create_buffer(env: napi_env, slice: &[u8] ) -> Result<napi_value, DecryptErro
 #[derive(Debug)]
 enum DecryptError {
     ArgumentError,
+    ArgumentTypeError,
     ArgumentToBufferError,
     CreateBufferError,
     SecretKeyError,
@@ -128,6 +171,7 @@ impl fmt::Display for DecryptError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             DecryptError::ArgumentError => write!(f,"Error getting argument"),
+            DecryptError::ArgumentTypeError => write!(f,"Error argument is wrong type"),
             DecryptError::ArgumentToBufferError => write!(f,"Error converting to buffer"),
             DecryptError::CreateBufferError => write!(f,"Error creating buffer"),
             DecryptError::SecretKeyError => write!(f,"Error converting slice to Secret key, was the key length right?"),
@@ -141,6 +185,7 @@ impl error::Error for DecryptError {
     fn description(&self) -> &str {
         match *self {
             DecryptError::ArgumentError => "Error getting argument",
+            DecryptError::ArgumentTypeError => "Error argument is wrong type",
             DecryptError::ArgumentToBufferError => "Error converting to buffer",
             DecryptError::CreateBufferError => "Error creating buffer",
             DecryptError::SecretKeyError => "Error converting slice to Secret key, was the key length right?",
