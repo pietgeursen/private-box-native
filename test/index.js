@@ -28,24 +28,27 @@ test('returns undefined when key is wrong', function (t) {
 test('throws a type error if args are not buffers', function (t) {
   var cypherText = Buffer.from(test_data.cypherText, 'base64')
   var secretKey = Buffer.from(test_data.keys[0].secretKey, 'base64')
+  var regex = new RegExp('ArgumentTypeError')
   t.throws(function () {
     decrypt(0, secretKey)
-  }, TypeError, 'throws a type error')
+  }, regex, 'throws a type error')
   t.throws(function () {
     decrypt(cypherText, 0)
-  }, TypeError, 'throws a type error')
+  }, regex, 'throws a type error')
   t.end()
 })
 
 test('throws an error if incorrect number of args', function (t) {
   var cypherText = Buffer.from(test_data.cypherText, 'base64')
   var secretKey = Buffer.from(test_data.keys[0].secretKey, 'base64')
+
+  var regex = new RegExp('ArgumentTypeError')
   t.throws(function () {
     decrypt(0, secretKey)
-  }, TypeError)
+  }, regex)
   t.throws(function () {
     decrypt(cypherText, 0)
-  }, TypeError)
+  }, regex)
   t.end()
 })
 
@@ -53,7 +56,7 @@ test('throws an error if secret key is incorrect', function (t) {
   var secretKey = Buffer.from(test_data.keys[0].secretKey, 'base64')
   var cypherText = Buffer.from(test_data.cypherText, 'base64')
 
-  var regex = new RegExp('key')
+  var regex = new RegExp('SecretKeyError')
 
   t.throws(function () {
     decrypt(cypherText, secretKey.slice(0, 16))

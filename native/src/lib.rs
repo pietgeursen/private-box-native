@@ -1,14 +1,20 @@
+
+#![recursion_limit = "1024"]
+#[macro_use]
+extern crate error_chain;
+
 extern crate private_box;
 use private_box::{SecretKey};
 
 mod napi_sys;
 use napi_sys::*;
-use std::{ptr, fmt, error};
-use std::error::Error;
+use std::ptr;
 use std::os::raw::c_void;
 use std::ffi::CString;
 
 use private_box::{decrypt as decrypt_rs, init as init_rs};
+
+use errors::*;
 
 #[no_mangle]
 pub extern "C" fn init(){
@@ -19,19 +25,19 @@ pub extern "C" fn init(){
 pub extern "C" fn decrypt(env: napi_env, info: napi_callback_info) -> napi_value {
     match try_decrypt(env, info) {
         Ok(result) => result,
-        Err(err @ DecryptError::ArgumentTypeError) => {
-            throw_type_error(env, err);
+        Err(Error(err @ ErrorKind::ArgumentTypeError, _)) => {
+            throw_type_error(env, err).unwrap();
             get_undefined_value(env).unwrap()
         },
-        Err(err @ DecryptError::SecretKeyError) => {
-            throw_type_error(env, err);
+        Err(Error(err @ ErrorKind::SecretKeyError, _)) => {
+            throw_type_error(env, err).unwrap();
             get_undefined_value(env).unwrap()
         },
         Err(_) => get_undefined_value(env).unwrap() 
     }
 }
 
-fn try_decrypt(env: napi_env, info: napi_callback_info) -> Result<napi_value, DecryptError> {
+fn try_decrypt(env: napi_env, info: napi_callback_info) -> Result<napi_value> {
 
     let cypher_value = get_arg(env, info, 0)?;
     let secret_value = get_arg(env, info, 1)?;
@@ -48,10 +54,10 @@ fn try_decrypt(env: napi_env, info: napi_callback_info) -> Result<napi_value, De
     }
 
     let key = SecretKey::from_slice(secret_slice)
-        .ok_or(DecryptError::SecretKeyError)?;
+        .ok_or_else(|| ErrorKind::SecretKeyError)?;
 
     decrypt_rs(cypher_slice, &key)
-        .or(Err(DecryptError::NotARecipient))
+        .or(Err(ErrorKind::NotARecipient.into()))
         .and_then(|result|{
             create_buffer(env, &result)
         })
@@ -66,7 +72,7 @@ pub extern "C" fn decrypt_async() -> isize{
     unimplemented!()
 }
 
-fn throw_type_error(env: napi_env, err: DecryptError) -> Result<(), DecryptError>{
+fn throw_type_error(env: napi_env, err: ErrorKind) -> Result<()>{
     let status: napi_status;
     let msg = CString::new(err.description()).unwrap();
     unsafe {
@@ -75,11 +81,11 @@ fn throw_type_error(env: napi_env, err: DecryptError) -> Result<(), DecryptError
 
     match status {
         napi_status_napi_ok => Ok(()),
-        _ => Err(DecryptError::NapiError)
+        _ => Err(ErrorKind::NapiError.into())
     }
 }
 
-fn get_undefined_value(env: napi_env)-> Result<napi_value, DecryptError>{
+fn get_undefined_value(env: napi_env)-> Result<napi_value>{
     let mut undefined_value: napi_value = ptr::null_mut();
     let status: napi_status;
     unsafe {
@@ -88,11 +94,11 @@ fn get_undefined_value(env: napi_env)-> Result<napi_value, DecryptError>{
 
     match status {
         napi_status_napi_ok => Ok(undefined_value),
-        _ => Err(DecryptError::NapiError)
+        _ => Err(ErrorKind::NapiError.into())
     }
 }
 
-fn get_arg(env: napi_env, info: napi_callback_info, arg_index: usize) -> Result<napi_value, DecryptError> {
+fn get_arg(env: napi_env, info: napi_callback_info, arg_index: usize) -> Result<napi_value> {
     let status: napi_status;
     let mut num_args = arg_index + 1;
     let mut args: Vec<napi_value> = Vec::with_capacity(num_args);
@@ -104,11 +110,11 @@ fn get_arg(env: napi_env, info: napi_callback_info, arg_index: usize) -> Result<
 
     match status {
         napi_status_napi_ok => Ok(args[arg_index].clone()),
-        _ => Err(DecryptError::ArgumentError)
+        _ => Err(ErrorKind::ArgumentError.into())
     }
 }
 
-fn check_is_buffer(env: napi_env, value: napi_value) -> Result<bool, DecryptError> {
+fn check_is_buffer(env: napi_env, value: napi_value) -> Result<bool> {
     let status: napi_status;
     let mut result = false;
     unsafe {
@@ -116,19 +122,19 @@ fn check_is_buffer(env: napi_env, value: napi_value) -> Result<bool, DecryptErro
     }
     match status {
         napi_status_napi_ok => Ok(result),
-        _ => Err(DecryptError::NapiError)
+        _ => Err(ErrorKind::NapiError.into())
     }
 }
 
 
-fn get_buffer_info(env: napi_env, buffer: napi_value) -> Result<(*const u8, usize), DecryptError>{
+fn get_buffer_info(env: napi_env, buffer: napi_value) -> Result<(*const u8, usize)>{
     let status: napi_status;
     let mut buff_size = 0; 
     let mut p_buff: * mut c_void = ptr::null_mut(); 
 
     let is_buffer = check_is_buffer(env, buffer)?;
     if !is_buffer {
-        return Err(DecryptError::ArgumentTypeError)
+        bail!(ErrorKind::ArgumentTypeError)
     }
 
     unsafe {
@@ -137,11 +143,11 @@ fn get_buffer_info(env: napi_env, buffer: napi_value) -> Result<(*const u8, usiz
 
     match status {
         napi_status_napi_ok => Ok((p_buff as *const u8, buff_size)),
-        _ => Err(DecryptError::ArgumentToBufferError)
+        _ => Err(ErrorKind::ArgumentToBufferError.into())
     }
 }
 
-fn create_buffer(env: napi_env, slice: &[u8] ) -> Result<napi_value, DecryptError>{
+fn create_buffer(env: napi_env, slice: &[u8] ) -> Result<napi_value>{
     let status: napi_status;
     let mut _p_buff: * mut c_void = ptr::null_mut(); 
     let mut buffer: napi_value = ptr::null_mut();
@@ -152,50 +158,21 @@ fn create_buffer(env: napi_env, slice: &[u8] ) -> Result<napi_value, DecryptErro
 
     match status {
         napi_status_napi_ok => Ok(buffer),
-        _ => Err(DecryptError::CreateBufferError)
+        _ => Err(ErrorKind::CreateBufferError.into())
     }
 }
 
-#[derive(Debug)]
-enum DecryptError {
-    ArgumentError,
-    ArgumentTypeError,
-    ArgumentToBufferError,
-    CreateBufferError,
-    SecretKeyError,
-    NotARecipient,
-    NapiError
-}
-
-impl fmt::Display for DecryptError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            DecryptError::ArgumentError => write!(f,"Error getting argument"),
-            DecryptError::ArgumentTypeError => write!(f,"Error argument is wrong type"),
-            DecryptError::ArgumentToBufferError => write!(f,"Error converting to buffer"),
-            DecryptError::CreateBufferError => write!(f,"Error creating buffer"),
-            DecryptError::SecretKeyError => write!(f,"Error converting slice to Secret key, was the key length right?"),
-            DecryptError::NotARecipient => write!(f,"Couldn't find a message for us"),
-            DecryptError::NapiError => write!(f,"Error calling n-api internally."),
+mod errors {
+    // Create the Error, ErrorKind, ResultExt, and Result types
+    error_chain! {
+        errors {
+            ArgumentError {}
+            ArgumentTypeError{}
+            ArgumentToBufferError{}
+            CreateBufferError{}
+            SecretKeyError{}
+            NotARecipient{}
+            NapiError{}
         }
     }
 }
-
-impl error::Error for DecryptError {
-    fn description(&self) -> &str {
-        match *self {
-            DecryptError::ArgumentError => "Error getting argument",
-            DecryptError::ArgumentTypeError => "Error argument is wrong type",
-            DecryptError::ArgumentToBufferError => "Error converting to buffer",
-            DecryptError::CreateBufferError => "Error creating buffer",
-            DecryptError::SecretKeyError => "Error converting slice to Secret key, was the key length right?",
-            DecryptError::NotARecipient => "Couldn't find a message for us",
-            DecryptError::NapiError => "Error calling n-api internally.",
-        }
-    }
-
-    fn cause(&self) -> Option<&error::Error> {
-        None
-    }
-}
-

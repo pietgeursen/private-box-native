@@ -10,6 +10,7 @@ crate-type = ["dylib"]
 
 [dependencies]
 private-box = "0.4.3"
+error-chain = "0.12.0"
 
 # [dependencies.private-box]
 # path = "../../private-box-rs"
