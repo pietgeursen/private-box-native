@@ -29,7 +29,7 @@ pub extern "C" fn decrypt(env: napi_env, info: napi_callback_info) -> napi_value
             get_undefined_value(env).unwrap()
         },
         Err(Error(err, _)) => {
-            throw_type_error(env, err).unwrap();
+            throw_error(env, err).unwrap();
             get_undefined_value(env).unwrap()
         }
     }
@@ -70,11 +70,11 @@ pub extern "C" fn decrypt_async() -> isize{
     unimplemented!()
 }
 
-fn throw_type_error(env: napi_env, err: ErrorKind) -> Result<()>{
+fn throw_error(env: napi_env, err: ErrorKind) -> Result<()>{
     let status: napi_status;
     let msg = CString::new(err.description()).unwrap();
     unsafe {
-        status = napi_throw_type_error(env, ptr::null(), msg.as_ptr() as * const i8);
+        status = napi_throw_error(env, ptr::null(), msg.as_ptr() as * const i8);
     }
 
     match status {
