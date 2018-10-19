@@ -6,10 +6,17 @@ extern crate private_box;
 use private_box::SecretKey;
 
 mod napi_sys;
+mod napi;
+mod errors;
+
 use napi_sys::*;
+use napi::*;
+use errors::*;
+
 use std::ffi::CString;
 use std::os::raw::c_void;
 use std::ptr;
+use std::alloc::{Layout, alloc, dealloc};
 
 use private_box::{decrypt as decrypt_rs, init as init_rs};
 
@@ -47,7 +54,7 @@ fn try_decrypt(env: napi_env, info: napi_callback_info) -> Result<napi_value> {
         secret_slice = std::slice::from_raw_parts(p_secret, secret_len);
     }
 
-    let key = SecretKey::from_slice(secret_slice).ok_or_else(|| ErrorKind::SecretKeyError)?;
+    let key = SecretKey::from_slice(secret_slice).ok_or(ErrorKind::SecretKeyError)?;
 
     decrypt_rs(cypher_slice, &key)
         .or(Err(ErrorKind::NotARecipient.into()))
@@ -55,122 +62,87 @@ fn try_decrypt(env: napi_env, info: napi_callback_info) -> Result<napi_value> {
         .or_else(|_| get_undefined_value(env))
 }
 
-#[no_mangle]
-pub extern "C" fn decrypt_async() -> isize {
-    unimplemented!()
+struct DecryptContext {
+    cypher_ref: napi_ref,
+    secret_ref: napi_ref,
+    result_ref: napi_ref,
+
+    work: napi_async_work,
+
+    p_cypher: *mut u8,
+    cypher_len: usize,
+    p_secret: *mut u8,
+    secret_len: usize,
+    p_result: *mut u8,
+    result_len: usize,
 }
 
-fn throw_error(env: napi_env, err: ErrorKind) -> Result<()> {
-    let status: napi_status;
-    let msg = CString::new(err.description()).unwrap();
-    unsafe {
-        status = napi_throw_error(env, ptr::null(), msg.as_ptr() as *const i8);
-    }
-
-    match status {
-        napi_status_napi_ok => Ok(()),
-        _ => Err(ErrorKind::NapiError.into()),
-    }
-}
-
-fn get_undefined_value(env: napi_env) -> Result<napi_value> {
-    let mut undefined_value: napi_value = ptr::null_mut();
-    let status: napi_status;
-    unsafe {
-        status = napi_get_undefined(env, &mut undefined_value);
-    }
-
-    match status {
-        napi_status_napi_ok => Ok(undefined_value),
-        _ => Err(ErrorKind::NapiError.into()),
-    }
-}
-
-fn get_arg(env: napi_env, info: napi_callback_info, arg_index: usize) -> Result<napi_value> {
-    let status: napi_status;
-    let mut num_args = arg_index + 1;
-    let mut args: Vec<napi_value> = Vec::with_capacity(num_args);
-
-    unsafe {
-        status = napi_get_cb_info(
-            env,
-            info,
-            &mut num_args,
-            args.as_mut_ptr(),
-            ptr::null_mut(),
-            ptr::null_mut(),
-        );
-        args.set_len(num_args);
-    }
-
-    match status {
-        napi_status_napi_ok => Ok(args[arg_index].clone()),
-        _ => Err(ErrorKind::ArgumentError.into()),
-    }
-}
-
-fn check_is_buffer(env: napi_env, value: napi_value) -> Result<bool> {
-    let status: napi_status;
-    let mut result = false;
-    unsafe { status = napi_is_buffer(env, value, &mut result) }
-    match status {
-        napi_status_napi_ok => Ok(result),
-        _ => Err(ErrorKind::NapiError.into()),
-    }
-}
-
-fn get_buffer_info(env: napi_env, buffer: napi_value) -> Result<(*const u8, usize)> {
-    let status: napi_status;
-    let mut buff_size = 0;
-    let mut p_buff: *mut c_void = ptr::null_mut();
-
-    let is_buffer = check_is_buffer(env, buffer)?;
-    if !is_buffer {
-        bail!(ErrorKind::ArgumentTypeError)
-    }
-
-    unsafe {
-        status = napi_get_buffer_info(env, buffer, &mut p_buff, &mut buff_size);
-    }
-
-    match status {
-        napi_status_napi_ok => Ok((p_buff as *const u8, buff_size)),
-        _ => Err(ErrorKind::ArgumentToBufferError.into()),
-    }
-}
-
-fn create_buffer(env: napi_env, slice: &[u8]) -> Result<napi_value> {
-    let status: napi_status;
-    let mut _p_buff: *mut c_void = ptr::null_mut();
-    let mut buffer: napi_value = ptr::null_mut();
-
-    unsafe {
-        status = napi_create_buffer_copy(
-            env,
-            slice.len(),
-            slice.as_ptr() as *const c_void,
-            &mut _p_buff,
-            &mut buffer,
-        );
-    }
-
-    match status {
-        napi_status_napi_ok => Ok(buffer),
-        _ => Err(ErrorKind::CreateBufferError.into()),
-    }
-}
-
-mod errors {
-    // Create the Error, ErrorKind, ResultExt, and Result types
-    error_chain! {
-        errors {
-            ArgumentError {}
-            ArgumentTypeError{}
-            ArgumentToBufferError{}
-            CreateBufferError{}
-            SecretKeyError{}
-            NotARecipient{}
-            NapiError{}
+impl Default for DecryptContext{
+    fn default() -> DecryptContext {
+        DecryptContext{
+            cypher_ref: ptr::null_mut(),
+            secret_ref: ptr::null_mut(),
+            result_ref: ptr::null_mut(),
+            work: ptr::null_mut(),
+            p_cypher: ptr::null_mut(),
+            cypher_len: 0,
+            p_secret: ptr::null_mut(),
+            secret_len: 0,
+            p_result: ptr::null_mut(),
+            result_len: 0,
         }
     }
 }
+
+extern "C" fn decrypt_async_execute(env: napi_env, data: *mut c_void){
+    let status: napi_status;
+    let mut context = unsafe { &mut *(data as *mut DecryptContext) };
+}
+
+extern "C" fn decrypt_async_complete(env: napi_env, data: *mut c_void){
+    let status: napi_status;
+    let mut context = unsafe { &mut *(data as *mut DecryptContext) };
+
+
+    let layout = Layout::for_value(&context);
+    unsafe {
+        status = napi_delete_async_work(env, context.work);
+        dealloc(data as *mut u8, layout);
+    }
+}
+
+//maybe there's a trait that let's you "new" an unmanaged thing?
+fn alloc_decrypt_context() -> *mut DecryptContext{
+    let mut context = DecryptContext::default();
+    let layout = Layout::for_value(&context);
+
+    unsafe {
+        alloc(layout);
+    }
+    &mut context
+}
+
+#[no_mangle]
+pub extern "C" fn decrypt_async(env: napi_env, info: napi_callback_info) -> Result<napi_value> {
+    let cypher_value = get_arg(env, info, 0)?;
+    let secret_value = get_arg(env, info, 1)?;
+
+    let (p_cypher, cypher_len) = get_buffer_info(env, cypher_value)?;
+    let (p_secret, secret_len) = get_buffer_info(env, secret_value)?;
+
+    let cypher_slice;
+    let secret_slice;
+
+    unsafe {
+        cypher_slice = std::slice::from_raw_parts(p_cypher, cypher_len);
+        secret_slice = std::slice::from_raw_parts(p_secret, secret_len);
+    }
+
+    let key = SecretKey::from_slice(secret_slice).ok_or(ErrorKind::SecretKeyError)?;
+
+    let mut context = alloc_decrypt_context();
+
+    unimplemented!()
+}
+
+
