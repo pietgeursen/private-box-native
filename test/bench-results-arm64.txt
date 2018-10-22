@@ -1,0 +1,6 @@
+private-box valid recipient 33147.26741099999
+private-box invalid recipient 27053.697539
+private-box-rs valid recipient 13946.414797999998
+private-box-rs invalid recipient 13607.082867999998
+private-box-rs async valid key 3813.8214609999995
+private-box-rs async invalid key 3747.448902999997
