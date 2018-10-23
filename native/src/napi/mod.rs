@@ -3,7 +3,6 @@ use errors::*;
 use std::ffi::CString;
 use std::os::raw::c_void;
 use std::ptr;
-use std::alloc::{Layout, alloc, dealloc};
 use std::debug_assert;
 
 pub fn throw_error(env: napi_env, err: ErrorKind) {

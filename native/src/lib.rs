@@ -13,14 +13,11 @@ use napi_sys::*;
 use napi::*;
 use errors::*;
 
-use std::ffi::CString;
 use std::os::raw::c_void;
 use std::ptr;
 use std::alloc::{Layout, alloc, dealloc};
 
 use private_box::{decrypt as decrypt_rs, init as init_rs};
-
-use errors::*;
 
 #[no_mangle]
 pub extern "C" fn init() {
@@ -197,7 +194,7 @@ extern "C" fn cleanup_decrypt_context(arg: *mut c_void){
 
 pub extern "C" fn decrypt_async(env: napi_env, info: napi_callback_info) -> napi_value {
     let context = alloc_decrypt_context();
-    let mut status = 0;
+    let mut status;
 
     unsafe {
         status = napi_add_env_cleanup_hook(env, Some(cleanup_decrypt_context), context as *mut c_void);
