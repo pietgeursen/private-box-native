@@ -66,7 +66,6 @@ test('throws an error if secret key is incorrect', function (t) {
 })
 
 test('decrypts ok async', function (t) {
-  t.plan(2)
   var secretKey = Buffer.from(test_data.keys[0].secretKey, 'base64')
   var cypherText = Buffer.from(test_data.cypherText, 'base64')
   var msg = Buffer.from(test_data.msg, 'base64')
@@ -77,14 +76,40 @@ test('decrypts ok async', function (t) {
     t.end()
   })
 })
-test('returns undefined when key is wrong async', function (t) {
-  t.plan(2)
+
+test('calls back with undefined when not a recipient async', function (t) {
   var publicKey = Buffer.from(test_data.keys[0].publicKey, 'base64')
   var cypherText = Buffer.from(test_data.cypherText, 'base64')
 
   decrypt(cypherText, publicKey, (err, result) => {
     t.error(err)
     t.deepEqual(result, undefined)
+    t.end()
+  })
+})
+
+test('calls back with an error if args are not buffers async', function (t) {
+  var secretKey = Buffer.from(test_data.keys[0].secretKey, 'base64')
+  var regex = new RegExp('ArgumentTypeError')
+
+  decrypt(0, secretKey, function (err, result) {
+    t.false(result)
+    t.true(regex.test(err.message))
+
+    t.end()
+  })
+})
+
+test.skip('calls back with an error if secret key is not valid async', function (t) {
+  var cypherText = Buffer.from(test_data.cypherText, 'base64')
+  var secretKey = Buffer.from(test_data.keys[0].secretKey, 'base64').slice(0, 16)
+  var regex = new RegExp('SecretKeyError')
+
+  decrypt(cypherText, secretKey, function (err, result) {
+    t.false(result)
+    console.log(err.message)
+    t.true(regex.test(err.message))
+
     t.end()
   })
 })

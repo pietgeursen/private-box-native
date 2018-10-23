@@ -15,6 +15,18 @@ pub fn throw_error(env: napi_env, err: ErrorKind) {
     debug_assert!(status == napi_status_napi_ok)
 }
 
+pub fn create_error(env: napi_env, err: ErrorKind) -> napi_value {
+    let status: napi_status;
+    let mut result: napi_value = ptr::null_mut();
+    let msg = create_string_utf8(env, err.description());
+
+    unsafe {
+        status = napi_create_error(env, ptr::null_mut(), msg, &mut result);
+    }
+    debug_assert!(status == napi_status_napi_ok);
+
+    result
+}
 pub fn get_undefined_value(env: napi_env) -> napi_value {
     let mut undefined_value: napi_value = ptr::null_mut();
     let status: napi_status;
@@ -61,7 +73,6 @@ pub fn get_buffer_info(env: napi_env, buffer: napi_value) -> (*mut u8, usize) {
     let status: napi_status;
     let mut buff_size = 0;
     let mut p_buff: *mut c_void = ptr::null_mut();
-
 
     unsafe {
         status = napi_get_buffer_info(env, buffer, &mut p_buff, &mut buff_size);

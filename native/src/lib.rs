@@ -208,6 +208,18 @@ pub extern "C" fn decrypt_async(env: napi_env, info: napi_callback_info) -> napi
     let secret_value = get_arg(env, info, 1);
     let cb_value = get_arg(env, info, 2);
 
+    if !check_is_buffer(env, cypher_value) || !check_is_buffer(env, secret_value){
+        let err = create_error(env, ErrorKind::ArgumentTypeError);
+        let mut global: napi_value = ptr::null_mut();
+        let mut return_value: napi_value = ptr::null_mut();
+
+        unsafe{
+            napi_get_global(env, &mut global);
+            napi_call_function(env, global, cb_value, 1, &err as *const napi_value, &mut return_value);
+        }
+        return get_undefined_value(env);
+    }
+
     let (p_cypher, cypher_len) = get_buffer_info(env, cypher_value);
     let (p_secret, secret_len) = get_buffer_info(env, secret_value);
 
