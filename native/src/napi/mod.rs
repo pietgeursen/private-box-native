@@ -1,9 +1,9 @@
-use napi_sys::*;
 use errors::*;
+use napi_sys::*;
+use std::debug_assert;
 use std::ffi::CString;
 use std::os::raw::c_void;
 use std::ptr;
-use std::debug_assert;
 
 pub fn throw_error(env: napi_env, err: ErrorKind) {
     let status: napi_status;
@@ -120,19 +120,14 @@ pub fn create_buffer(env: napi_env, len: usize) -> napi_value {
     let mut buffer: napi_value = ptr::null_mut();
 
     unsafe {
-        status = napi_create_buffer(
-            env,
-            len,
-            &mut _p_buff,
-            &mut buffer,
-        );
+        status = napi_create_buffer(env, len, &mut _p_buff, &mut buffer);
     }
     debug_assert!(status == napi_status_napi_ok);
 
     buffer
 }
 
-pub fn create_reference(env: napi_env, value: napi_value) -> napi_ref{
+pub fn create_reference(env: napi_env, value: napi_value) -> napi_ref {
     let status: napi_status;
     let mut reference: napi_ref = ptr::null_mut();
 
@@ -144,19 +139,19 @@ pub fn create_reference(env: napi_env, value: napi_value) -> napi_ref{
     reference
 }
 
-pub fn get_reference_value(env: napi_env, reference: napi_ref) -> napi_value{
+pub fn get_reference_value(env: napi_env, reference: napi_ref) -> napi_value {
     let status: napi_status;
     let mut value: napi_value = ptr::null_mut();
 
     unsafe {
-        status = napi_get_reference_value(env, reference,  &mut value);
+        status = napi_get_reference_value(env, reference, &mut value);
     }
     debug_assert!(status == napi_status_napi_ok);
 
     value
 }
 
-pub fn delete_reference(env: napi_env, reference: napi_ref){
+pub fn delete_reference(env: napi_env, reference: napi_ref) {
     let status: napi_status;
 
     unsafe {
@@ -176,7 +171,7 @@ pub fn create_int32(env: napi_env, num: i32) -> napi_value {
     result
 }
 
-pub fn slice_buffer(env: napi_env, buff: napi_value, beginning: usize, end: usize) -> napi_value{
+pub fn slice_buffer(env: napi_env, buff: napi_value, beginning: usize, end: usize) -> napi_value {
     let mut status: napi_status;
     let mut slice_fn: napi_value = ptr::null_mut();
     let mut args: [napi_value; 2] = [ptr::null_mut(), ptr::null_mut()];
@@ -192,11 +187,17 @@ pub fn slice_buffer(env: napi_env, buff: napi_value, beginning: usize, end: usiz
     debug_assert!(status == napi_status_napi_ok);
 
     unsafe {
-        status = napi_call_function(env, buff, slice_fn, 2, &args[0] as *const napi_value, &mut return_value);
+        status = napi_call_function(
+            env,
+            buff,
+            slice_fn,
+            2,
+            &args[0] as *const napi_value,
+            &mut return_value,
+        );
     }
 
     debug_assert!(status == napi_status_napi_ok);
 
     return_value
 }
-

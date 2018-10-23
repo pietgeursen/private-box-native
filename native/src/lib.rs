@@ -5,17 +5,17 @@ extern crate error_chain;
 extern crate private_box;
 use private_box::SecretKey;
 
-mod napi_sys;
-mod napi;
 mod errors;
+mod napi;
+mod napi_sys;
 
-use napi_sys::*;
-use napi::*;
 use errors::*;
+use napi::*;
+use napi_sys::*;
 
+use std::alloc::{alloc, dealloc, Layout};
 use std::os::raw::c_void;
 use std::ptr;
-use std::alloc::{Layout, alloc, dealloc};
 
 use private_box::{decrypt as decrypt_rs, init as init_rs};
 
@@ -40,7 +40,7 @@ fn try_decrypt(env: napi_env, info: napi_callback_info) -> Result<napi_value> {
     let cypher_value = get_arg(env, info, 0);
     let secret_value = get_arg(env, info, 1);
 
-    if !check_is_buffer(env, cypher_value) || !check_is_buffer(env, secret_value){
+    if !check_is_buffer(env, cypher_value) || !check_is_buffer(env, secret_value) {
         bail!(ErrorKind::ArgumentTypeError)
     }
 
@@ -57,13 +57,9 @@ fn try_decrypt(env: napi_env, info: napi_callback_info) -> Result<napi_value> {
 
     let key = SecretKey::from_slice(secret_slice).ok_or(ErrorKind::SecretKeyError)?;
 
-    match decrypt_rs(cypher_slice, &key){
-        Ok(result) => {
-            Ok(create_buffer_copy(env, &result))
-        }
-        _ => {
-            Ok(get_undefined_value(env))
-        }
+    match decrypt_rs(cypher_slice, &key) {
+        Ok(result) => Ok(create_buffer_copy(env, &result)),
+        _ => Ok(get_undefined_value(env)),
     }
 }
 
@@ -83,9 +79,9 @@ struct DecryptContext {
     result_len: usize,
 }
 
-impl Default for DecryptContext{
+impl Default for DecryptContext {
     fn default() -> DecryptContext {
-        DecryptContext{
+        DecryptContext {
             cypher_ref: ptr::null_mut(),
             secret_ref: ptr::null_mut(),
             result_ref: ptr::null_mut(),
@@ -101,13 +97,12 @@ impl Default for DecryptContext{
     }
 }
 
-extern "C" fn decrypt_async_execute(_env: napi_env, data: *mut c_void){
+extern "C" fn decrypt_async_execute(_env: napi_env, data: *mut c_void) {
     let context = unsafe { &mut *(data as *mut DecryptContext) };
 
     let cypher_slice;
     let secret_slice;
     let result_slice;
-
 
     unsafe {
         cypher_slice = std::slice::from_raw_parts(context.p_cypher, context.cypher_len);
@@ -117,25 +112,20 @@ extern "C" fn decrypt_async_execute(_env: napi_env, data: *mut c_void){
 
     let result = SecretKey::from_slice(secret_slice)
         .ok_or(ErrorKind::SecretKeyError)
-        .and_then(|key|{
-            decrypt_rs(cypher_slice, &key)
-                .or(Err(ErrorKind::NotARecipient.into()))
-        });
-
+        .and_then(|key| decrypt_rs(cypher_slice, &key).or(Err(ErrorKind::NotARecipient.into())));
 
     match result {
         Ok(result) => {
             result_slice[..result.len()].copy_from_slice(&result);
             context.result_len = result.len();
-        },
+        }
         _ => {
             context.result_len = 0;
         }
     }
-
 }
 
-extern "C" fn decrypt_async_complete(env: napi_env, _status: napi_status, data: *mut c_void){
+extern "C" fn decrypt_async_complete(env: napi_env, _status: napi_status, data: *mut c_void) {
     let context = unsafe { &mut *(data as *mut DecryptContext) };
 
     delete_reference(env, context.cypher_ref);
@@ -156,11 +146,17 @@ extern "C" fn decrypt_async_complete(env: napi_env, _status: napi_status, data: 
     let mut global: napi_value = ptr::null_mut();
     let mut return_value: napi_value = ptr::null_mut();
 
-    unsafe{
+    unsafe {
         napi_get_global(env, &mut global);
-        napi_call_function(env, global, cb, 2, &args[0] as *const napi_value, &mut return_value);
+        napi_call_function(
+            env,
+            global,
+            cb,
+            2,
+            &args[0] as *const napi_value,
+            &mut return_value,
+        );
     }
-
 
     delete_reference(env, context.cb_ref);
     unsafe {
@@ -169,7 +165,7 @@ extern "C" fn decrypt_async_complete(env: napi_env, _status: napi_status, data: 
 }
 
 //maybe there's a trait that let's you "new" an unmanaged thing?
-fn alloc_decrypt_context() -> *mut DecryptContext{
+fn alloc_decrypt_context() -> *mut DecryptContext {
     let context = DecryptContext::default();
     let p_context: *mut DecryptContext;
     let layout = Layout::for_value(&context);
@@ -181,12 +177,12 @@ fn alloc_decrypt_context() -> *mut DecryptContext{
 }
 
 //maybe there's a trait that let's you "new" an unmanaged thing?
-extern "C" fn cleanup_decrypt_context(arg: *mut c_void){
+extern "C" fn cleanup_decrypt_context(arg: *mut c_void) {
     let context = unsafe { &mut *(arg as *mut DecryptContext) };
     let layout = Layout::for_value(&context);
 
     unsafe {
-        dealloc(arg as *mut u8 , layout);
+        dealloc(arg as *mut u8, layout);
     }
 }
 
@@ -197,7 +193,8 @@ pub extern "C" fn decrypt_async(env: napi_env, info: napi_callback_info) -> napi
     let mut status;
 
     unsafe {
-        status = napi_add_env_cleanup_hook(env, Some(cleanup_decrypt_context), context as *mut c_void);
+        status =
+            napi_add_env_cleanup_hook(env, Some(cleanup_decrypt_context), context as *mut c_void);
     }
     debug_assert!(status == napi_status_napi_ok);
 
@@ -205,14 +202,21 @@ pub extern "C" fn decrypt_async(env: napi_env, info: napi_callback_info) -> napi
     let secret_value = get_arg(env, info, 1);
     let cb_value = get_arg(env, info, 2);
 
-    if !check_is_buffer(env, cypher_value) || !check_is_buffer(env, secret_value){
+    if !check_is_buffer(env, cypher_value) || !check_is_buffer(env, secret_value) {
         let err = create_error(env, ErrorKind::ArgumentTypeError);
         let mut global: napi_value = ptr::null_mut();
         let mut return_value: napi_value = ptr::null_mut();
 
-        unsafe{
+        unsafe {
             napi_get_global(env, &mut global);
-            napi_call_function(env, global, cb_value, 1, &err as *const napi_value, &mut return_value);
+            napi_call_function(
+                env,
+                global,
+                cb_value,
+                1,
+                &err as *const napi_value,
+                &mut return_value,
+            );
         }
         return get_undefined_value(env);
     }
@@ -246,14 +250,14 @@ pub extern "C" fn decrypt_async(env: napi_env, info: napi_callback_info) -> napi
 
         //TODO check status
         status = napi_create_async_work(
-            env, 
-            ptr::null_mut(), 
-            work_name, 
-            Some(decrypt_async_execute), 
-            Some(decrypt_async_complete), 
-            context as *mut DecryptContext as *mut c_void, 
-            &mut work
-            );
+            env,
+            ptr::null_mut(),
+            work_name,
+            Some(decrypt_async_execute),
+            Some(decrypt_async_complete),
+            context as *mut DecryptContext as *mut c_void,
+            &mut work,
+        );
     }
     debug_assert!(status == napi_status_napi_ok);
 
@@ -266,5 +270,3 @@ pub extern "C" fn decrypt_async(env: napi_env, info: napi_callback_info) -> napi
 
     get_undefined_value(env)
 }
-
-
