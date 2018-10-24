@@ -24,6 +24,7 @@ pub extern "C" fn init() {
     init_rs();
 }
 
+
 #[no_mangle]
 pub extern "C" fn decrypt(env: napi_env, info: napi_callback_info) -> napi_value {
     match try_decrypt(env, info) {
@@ -187,7 +188,6 @@ extern "C" fn cleanup_decrypt_context(arg: *mut c_void) {
 }
 
 #[no_mangle]
-
 pub extern "C" fn decrypt_async(env: napi_env, info: napi_callback_info) -> napi_value {
     let context = alloc_decrypt_context();
     let mut status;
@@ -248,7 +248,6 @@ pub extern "C" fn decrypt_async(env: napi_env, info: napi_callback_info) -> napi
         (*context).result_ref = result_ref;
         (*context).cb_ref = cb_ref;
 
-        //TODO check status
         status = napi_create_async_work(
             env,
             ptr::null_mut(),

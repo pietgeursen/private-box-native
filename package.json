@@ -21,7 +21,7 @@
     "install": "prebuild-install -r napi",
     "build-rs": "./build-native.sh",
     "prebuild": "prebuild -r napi --include-regex '\\.(node|so)$'",
-    "build": "npm run build-rs && npm run prebuild",
+    "build-all": "npm run build-rs && npm run prebuild",
     "test": "tape test/*.js"
   },
   "devDependencies": {

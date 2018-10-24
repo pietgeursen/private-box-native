@@ -1,0 +1,82 @@
+[env]
+SODIUM_STATIC="1"
+SODIUM_DIR="${CARGO_MAKE_WORKING_DIRECTORY}/target/libsodium"
+SODIUM_INSTALL_DIR="${SODIUM_DIR}/install_dir"
+SODIUM_LIB_DIR="${SODIUM_INSTALL_DIR}/lib"
+
+[tasks.format]
+install_crate = "rustfmt"
+command = "cargo"
+args = ["fmt", "--", "--write-mode=overwrite"]
+
+[tasks.clean]
+command = "cargo"
+args = ["clean"]
+
+[tasks.sodium_clone]
+command = "git"
+args = ["clone", "https://github.com/jedisct1/libsodium", "${SODIUM_DIR}"]
+
+[tasks.sodium_fetch]
+command = "git"
+args = ["-C", "${SODIUM_DIR}","fetch"]
+dependencies = ["sodium_clone"]
+
+[tasks.sodium_checkout]
+command = "git"
+args = ["-C",  "${SODIUM_DIR}","checkout", "origin/stable"]
+dependencies = ["sodium_fetch"]
+
+[tasks.sodium_autogen]
+script = [
+	"cd ${SODIUM_DIR}",
+	"./autogen.sh",
+]
+dependencies = ["sodium_checkout"]
+
+[tasks.sodium_configure]
+script = [
+	"cd ${SODIUM_DIR}",
+	"./configure --prefix=${SODIUM_INSTALL_DIR} --disable-shared --enable-static --enable-pic --disable-pie"
+]
+dependencies = ["sodium_autogen"]
+
+[tasks.sodium_make]
+script = [
+	"cd ${SODIUM_DIR}",
+	"make"
+]
+dependencies = ["sodium_configure"]
+
+[tasks.sodium_make_install]
+script = [
+	"cd ${SODIUM_DIR}",
+	"make install"
+]
+dependencies = ["sodium_make"]
+
+[tasks.build]
+command = "cargo"
+args = ["build", "--release"]
+dependencies = ["sodium_make_install"]
+
+[tasks.configure_napi_binding]
+command = "cmake" 
+args = ["."]
+
+[tasks.build_napi_binding]
+command = "make"
+dependencies = ["configure_napi_binding"]
+
+[tasks.mv_napi_binding]
+command = "mv"
+args = ["libbinding.so", "binding.node"]
+dependencies = ["build_napi_binding"]
+
+[tasks.my-flow]
+dependencies = [
+		"clean",
+		"build",
+    "sodium_make_install",
+		"mv_napi_binding"
+]

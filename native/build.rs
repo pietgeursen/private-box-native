@@ -1,6 +1,7 @@
 extern crate bindgen;
 
 fn main() {
+    println!("cargo:rustc-env=CFLAGS=-fPIC");
     // The bindgen::Builder is the main entry point
     // to bindgen, and lets you build up options for
     // the resulting bindings.
@@ -9,6 +10,7 @@ fn main() {
         // bindings for.
         .whitelist_function("napi_.+")
         .whitelist_type("napi_.+")
+        .whitelist_var("napi_.+")
         .header("./src/napi_sys/node_api.h")
         // Finish the builder and generate the bindings.
         .generate()
@@ -18,4 +20,5 @@ fn main() {
     bindings
         .write_to_file("./src/napi_sys/bindings.rs")
         .expect("Couldn't write bindings!");
+
 }

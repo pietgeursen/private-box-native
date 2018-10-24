@@ -6,14 +6,14 @@ license = "MIT"
 
 [lib]
 name = "private_box_native"
-crate-type = ["dylib"]
+crate-type = ["staticlib"]
 
 [dependencies]
-private-box = "0.4.3"
+# private-box = "0.4.3"
 error-chain = "0.12.0"
 
-# [dependencies.private-box]
-# path = "../../private-box-rs"
+[dependencies.private-box]
+path = "../../private-box-rs"
 
 [build-dependencies]
 bindgen = "0.42.2"
