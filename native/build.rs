@@ -2,6 +2,7 @@ extern crate bindgen;
 
 fn main() {
     println!("cargo:rustc-env=CFLAGS=-fPIC");
+
     // The bindgen::Builder is the main entry point
     // to bindgen, and lets you build up options for
     // the resulting bindings.

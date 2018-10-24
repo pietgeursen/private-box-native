@@ -27,6 +27,13 @@ Get cross building everything
   - sodium build happens first. gets called with the dockcross (linux-arm64)
   - rust build happens with cross (aarch64-unknown-linux-gnu)
   - binding build happens with dock cross (linux-arm64)
+
+- Hypothesis: That cross can't use absolute paths at all. This would match maybe with dockercross.
+  - How to test? 
+    - see if dockercross can ls an absolute path => It can't.
+    - make a hello world cross lib and see if ls works in the build rs.
+  - How to get around?
+    - make my own libsodium-sys, which would give me control of the build.rs and in there I could try and pass a relative path to the rustc-link-path. If that even works.
   
 
 
