@@ -1,8 +1,15 @@
 [env]
+PKG_CONFIG_ALLOW_CROSS="1"
 SODIUM_STATIC="1"
 SODIUM_DIR="${CARGO_MAKE_WORKING_DIRECTORY}/target/libsodium"
 SODIUM_INSTALL_DIR="${SODIUM_DIR}/install_dir"
 SODIUM_LIB_DIR="${SODIUM_INSTALL_DIR}/lib"
+
+DOCKER_CROSS_IMAGE_NAME="linux-arm64"
+DOCKER_CROSS_TRIPLE="arm64-unknown-linux-gnu"
+CROSS_TRIPLE="aarch64-unknown-linux-gnu"
+DOCKER_CROSS_SCRIPT_NAME="dockcross"
+DOCKER_CROSS_SCRIPT="${CARGO_MAKE_WORKING_DIRECTORY}/${DOCKER_CROSS_SCRIPT_NAME}"
 
 [tasks.format]
 install_crate = "rustfmt"
@@ -12,6 +19,17 @@ args = ["fmt", "--", "--write-mode=overwrite"]
 [tasks.clean]
 command = "cargo"
 args = ["clean"]
+
+[tasks.dockercross_download]
+script = [
+	"docker pull dockcross/${DOCKER_CROSS_IMAGE_NAME}"
+]
+
+[tasks.dockercross_create_script]
+script = [
+	"docker run --rm dockcross/${DOCKER_CROSS_IMAGE_NAME}> ./${DOCKER_CROSS_SCRIPT_NAME}",
+	"chmod +x ./${DOCKER_CROSS_SCRIPT_NAME}"
+]
 
 [tasks.sodium_clone]
 script = [
@@ -31,24 +49,27 @@ dependencies = ["sodium_fetch"]
 [tasks.sodium_make_install]
 script = [
 	"cd ${SODIUM_DIR}",
-	"./autogen.sh",
-	"./configure --prefix=${SODIUM_INSTALL_DIR} --disable-shared --enable-static --disable-pie",
-	"make",
-	"make install",
+	"${DOCKER_CROSS_SCRIPT} ./autogen.sh",
+	"${DOCKER_CROSS_SCRIPT} ./configure --prefix=${SODIUM_INSTALL_DIR} --disable-shared --enable-static --disable-pie --host=${DOCKER_CROSS_TRIPLE}",
+	"${DOCKER_CROSS_SCRIPT} make",
+	"mkdir -p ${SODIUM_LIB_DIR}/pkgconfig",
+	"install -c -m 644 libsodium.pc ${SODIUM_LIB_DIR}/pkgconfig",
+	"install src/libsodium/.libs/libsodium.a ${SODIUM_LIB_DIR}/libsodium.a",
+	"ranlib src/libsodium/.libs/libsodium.a ${SODIUM_LIB_DIR}/libsodium.a",
 ]
-dependencies = ["sodium_checkout"]
+dependencies = ["dockercross_create_script", "sodium_checkout"]
 
 [tasks.build]
-command = "cargo"
-args = ["build", "--release"]
+command = "cross"
+args = ["build", "--release", "--target", "${CROSS_TRIPLE}"]
 dependencies = ["sodium_make_install"]
 
 [tasks.configure_napi_binding]
-command = "cmake" 
+command = "${DOCKER_CROSS_SCRIPT} cmake" 
 args = ["."]
 
 [tasks.build_napi_binding]
-command = "make"
+command = "${DOCKER_CROSS_SCRIPT} make"
 dependencies = ["configure_napi_binding"]
 
 [tasks.mv_napi_binding]

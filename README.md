@@ -22,12 +22,11 @@ napi todos:
 
 Get cross building everything
 
-  - Ideas
-    - use cargo make? Doesn't really solve how to do cross compile
-    - use cmake, called by cargo or cargo make? Depends if this would pick up the correct env vars from cross?
-    - give up on cross?
-    - do it all in rust? Might take a day? Would depend if I can add gcc attributes to like C can.
-      - use a crate that manages the dynamic loading.
+- use cargo make? Doesn't really solve how to do cross compile
+  - need to choose a target triple, say arm64
+  - sodium build happens first. gets called with the dockcross (linux-arm64)
+  - rust build happens with cross (aarch64-unknown-linux-gnu)
+  - binding build happens with dock cross (linux-arm64)
   
 
 
