@@ -69,12 +69,15 @@ script = [
 ]
 dependencies = ["sodium_make_install"]
 
+[tasks.mv_native_lib]
+script = ["cp target/${CROSS_TRIPLE}/release/libprivate_box_native.a target/release"]
+
 [tasks.configure_napi_binding]
-command = "${DOCKER_CROSS_SCRIPT} cmake" 
-args = ["."]
+script = ["${DOCKER_CROSS_SCRIPT} cmake ."]
+dependencies = ["mv_native_lib"]
 
 [tasks.build_napi_binding]
-command = "${DOCKER_CROSS_SCRIPT} make"
+script = ["${DOCKER_CROSS_SCRIPT} make"]
 dependencies = ["configure_napi_binding"]
 
 [tasks.mv_napi_binding]
