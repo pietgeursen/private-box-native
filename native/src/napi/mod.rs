@@ -2,14 +2,14 @@ use errors::*;
 use napi_sys::*;
 use std::debug_assert;
 use std::ffi::CString;
-use std::os::raw::c_void;
+use std::os::raw::{c_void, c_char};
 use std::ptr;
 
 pub fn throw_error(env: napi_env, err: ErrorKind) {
     let status: napi_status;
     let msg = CString::new(err.description()).unwrap();
     unsafe {
-        status = napi_throw_error(env, ptr::null(), msg.as_ptr() as *const i8);
+        status = napi_throw_error(env, ptr::null(), msg.as_ptr() as *const c_char);
     }
     debug_assert!(status == napi_status_napi_ok)
 }
@@ -104,7 +104,7 @@ pub fn create_buffer_copy(env: napi_env, slice: &[u8]) -> napi_value {
 pub fn create_string_utf8(env: napi_env, string: &str) -> napi_value {
     let status: napi_status;
     let mut result: napi_value = ptr::null_mut();
-    let p_str: *const std::os::raw::c_char = string.as_ptr() as *const i8;
+    let p_str: *const std::os::raw::c_char = string.as_ptr() as *const c_char; 
 
     unsafe {
         status = napi_create_string_utf8(env, p_str, string.len(), &mut result);
@@ -181,7 +181,7 @@ pub fn slice_buffer(env: napi_env, buff: napi_value, beginning: usize, end: usiz
     args[1] = create_int32(env, end as i32);
 
     unsafe {
-        status = napi_get_named_property(env, buff, "slice".as_ptr() as *const i8, &mut slice_fn);
+        status = napi_get_named_property(env, buff, "slice".as_ptr() as *const c_char, &mut slice_fn);
     }
 
     debug_assert!(status == napi_status_napi_ok);
