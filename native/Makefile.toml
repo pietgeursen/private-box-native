@@ -9,8 +9,14 @@ SODIUM_LIB_DIR="${SODIUM_INSTALL_DIR}/lib"
 
 DOCKER_CROSS_WORK_DIR="/work"
 DOCKER_CROSS_SODIUM_INSTALL_DIR="${DOCKER_CROSS_WORK_DIR}${SODIUM_REL_INSTALL_DIR}"
+#DOCKER_CROSS_IMAGE_NAME="windows-x64"
+#DOCKER_CROSS_TRIPLE="x86_64-pc-windows-gnu"
+#CROSS_TRIPLE="x86_64-pc-windows-gnu"
+# DOCKER_CROSS_IMAGE_NAME="android-arm64"
+# DOCKER_CROSS_TRIPLE="aarch64-linux-android"
+# CROSS_TRIPLE="aarch64-linux-android"
 DOCKER_CROSS_IMAGE_NAME="linux-arm64"
-DOCKER_CROSS_TRIPLE="arm64-unknown-linux-gnu"
+DOCKER_CROSS_TRIPLE="aarch64-unknown-linux-gnu"
 CROSS_TRIPLE="aarch64-unknown-linux-gnu"
 DOCKER_CROSS_SCRIPT_NAME="dockcross"
 DOCKER_CROSS_SCRIPT="${CARGO_MAKE_WORKING_DIRECTORY}/${DOCKER_CROSS_SCRIPT_NAME}"
@@ -73,7 +79,12 @@ dependencies = ["sodium_make_install"]
 script = ["cp target/${CROSS_TRIPLE}/release/libprivate_box_native.a target/release"]
 
 [tasks.configure_napi_binding]
-script = ["${DOCKER_CROSS_SCRIPT} cmake ."]
+script = [
+"rm Makefile",
+"rm CMakeCache.txt",
+"rm -rf CMakeFiles",
+"${DOCKER_CROSS_SCRIPT} cmake ."
+]
 dependencies = ["mv_native_lib"]
 
 [tasks.build_napi_binding]
